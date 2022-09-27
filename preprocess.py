@@ -62,8 +62,10 @@ def vectorisation_img(img_folder):
         sizes_l.append(img.shape[1])
         imgs.append(img)
     m = len(sizes_h)
-    h = int(sum(sizes_h)/m)
-    l = int(sum(sizes_l)/m)
+    # h = int(sum(sizes_h)/m)
+    # l = int(sum(sizes_l)/m)
+    h = 150
+    l = 150
     for i in range(m):
         img = imgs[i]
         if img.shape[2] == 4:
