@@ -29,7 +29,7 @@ def sgf_to_y(sgf_path):
     return y
 
 
-def y_to_sgf(y):
+def y_to_sgf(y,sgf_path):
     """ takes a (361,1) array corresponding to the intersection of the go board
     Each intersection is either 0 (no stone) 1 (black stone) 0.5 (white stone) and turns it into a sgf
     which is stored a sgf_final.sgf"""
@@ -43,7 +43,7 @@ def y_to_sgf(y):
             sgf = sgf + ';W[' + dic_number_to_letter[i//19] + \
                 dic_number_to_letter[i % 19]+']'
     sgf = sgf + ')'
-    sgf_final_file = open('sgf_final.sgf', 'w')
+    sgf_final_file = open(sgf_path, 'w')
     sgf_final_file.write(sgf)
     sgf_final_file.close()
 
@@ -96,25 +96,27 @@ def preprocess_sgf(sgf_path):
     sgf = ""
     for k in l_sgf:
         sgf += k
-
+    if 't' in sgf:
+        print('ATTENTION')
+        sgf_initial_file.close()
+        os.remove(sgf_path)
+        return sgf
     black_stones = [(dic_letter_to_number[sgf[i+3]], dic_letter_to_number[sgf[i+4]])
                     for i in range(len(sgf)) if sgf.startswith(';B[', i)]
     white_stones = [(dic_letter_to_number[sgf[i+3]], dic_letter_to_number[sgf[i+4]])
                     for i in range(len(sgf)) if sgf.startswith(';W[', i)]
-    print(len(black_stones),len(white_stones))
+                    
     black_board=np.zeros((19,19))
     white_board=np.zeros((19,19))
-    for i in range(len(black_stones)):
-        black_board[black_stones[i][0],black_stones[i][0]]=1
-        fast_capture_pieces(black_board,white_board,False,black_stones[i][0],black_stones[i][0])
-        white_board=[white_stones[i][0],white_stones[i][0]]=1
-        fast_capture_pieces(black_board,white_board,True,white_stones[i][0],white_stones[i][0])
+    l_b,l_w=(len(black_stones),len(white_stones))
+    for i in range(min(len(black_stones),len(white_stones))):
+        black_board[black_stones[i][0],black_stones[i][1]]=1
+        black_board, white_board = fast_capture_pieces(black_board,white_board,False,black_stones[i][0],black_stones[i][1])
+        white_board[white_stones[i][0],white_stones[i][1]]=1
+        black_board, white_board =fast_capture_pieces(black_board,white_board,True,white_stones[i][0],white_stones[i][1])
+    if l_b-l_w==1: ## if black plays last cause of a surrender
+        black_board[black_stones[-1][0],black_stones[-1][1]]=1
+        black_board, white_board = fast_capture_pieces(black_board,white_board,False,black_stones[i][0],black_stones[i][1])
     final_board=black_board+0.5*white_board
-    final_sgf=y_to_sgf(final_board.reshape(361,1))
-    sgf_final_file = open('sgf_final.sgf', 'w')
-    sgf_final_file.write(final_sgf)
-    sgf_final_file.close()
+    y_to_sgf(final_board.reshape(361,1),sgf_path)
     
-
-if __name__ == "__main__":
-    preprocess_sgf("test.sgf")
