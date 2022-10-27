@@ -100,6 +100,7 @@ def fast_capture_pieces(black_board, white_board, turn_white, y,x):
     has_liberties = test_group(opponent_board, board, *original_pos, current_group)
     if not has_liberties:
         board[current_group] = False
+    return black_board,white_board
 
 def floodfill(liberties,y,x):
     """

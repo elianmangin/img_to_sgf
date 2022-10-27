@@ -1,8 +1,11 @@
+from turtle import back
 import numpy as np
 import re
 from matplotlib import image
 import os
 from capture_check import fast_capture_pieces
+import cv2
+from PIL import Image, ImageDraw, ImageFont
 
 dic_number_to_letter = {0: "a", 1: "b", 2: "c", 3: "d", 4: "e", 5: "f", 6: "g", 7: "h", 8: "i",
                         9: "j", 10: "k", 11: "l", 12: "m", 13: "n", 14: "o", 15: "p", 16: "q", 17: "r", 18: "s"}
@@ -120,3 +123,38 @@ def preprocess_sgf(sgf_path):
     final_board=black_board+0.5*white_board
     y_to_sgf(final_board.reshape(361,1),sgf_path)
     
+def sgf_to_img(sgf_file):
+    """Takes an sgf and returns an image of the game (doesn't take captured stones in account)"""
+    background = Image.open('image_for_generation/goban_background.PNG') #prendre des screens sur KGS
+    white_stone = Image.open('image_for_generation/white_stone.PNG')
+    black_stone = Image.open('image_for_generation/black_stone.PNG')
+    background = background.resize((520,520))
+    bg_w, bg_h = background.width,background.height
+    stone_w,stone_h= bg_w//20,bg_h//20
+    black_stone = black_stone.resize((stone_w,stone_h))
+    white_stone = white_stone.resize((stone_w,stone_h))
+    y=sgf_to_y(sgf_file)
+    n=0
+    for k in y:
+        if k==0.5:
+            img_offset = (int((n//19+0.5)*stone_w),int((n%19+0.5)*stone_h),int((n//19+1.5)*stone_w),int((n%19+1.5)*stone_h))
+            background.paste(white_stone, img_offset, white_stone)
+        if k==1:
+            img_offset = (int((n//19+0.5)*stone_w),int((n%19+0.5)*stone_h),int((n//19+1.5)*stone_w),int((n%19+1.5)*stone_h))
+            background.paste(black_stone, img_offset, black_stone)
+        n+=1
+    return background
+
+
+if __name__ == "__main__":
+    #boucle pour faire sgf_to_img sur tous les sgf non faits
+    k=1
+    for file in os.listdir('sgf_train'):
+        # im = sgf_to_img('sgf_train/'+file)
+        # im.save('img_train/train_img_'+file[9:] +'.png',format='png')
+        os.rename('img_train/train_img_'+file[9:-4],'img_train/train_img_'+file[9:-4]+'.png')
+        k+=1
+        print(k)
+
+#Pistes d'amélioration:
+#Ajouter du bruit dans la génération d'image
