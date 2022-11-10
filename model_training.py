@@ -1,6 +1,6 @@
 from pickletools import optimize
 import tensorflow as tf
-from preprocess import sgf_to_y, vectorisation_img, vectorisation_sgf
+from preprocess import sgf_to_y, vectorisation_img, vectorisation_sgf, y_to_sgf
 from sklearn.model_selection import train_test_split
 import numpy as np
 import torch
@@ -32,9 +32,9 @@ if __name__ == '__main__':
     # Hyperparameters
     heigh=100
     lenght=100
-    m=1000
+    m=600
     test_size=0.2
-    epochs=10
+    epochs=5
     learnig_rate=1e-3
     #Data and model loading
     x,y=data_load(m,heigh,lenght)
@@ -83,3 +83,6 @@ if __name__ == '__main__':
     plt.legend()
     plt.yscale('log')
     plt.show()
+
+    y_prediction = model(vectorisation_img('img_train/train_img_'+str(6000)+'.png',heigh,lenght))
+    y_to_sgf(y_prediction)
