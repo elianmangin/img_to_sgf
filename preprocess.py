@@ -6,6 +6,7 @@ import os
 from capture_check import fast_capture_pieces
 import cv2
 from PIL import Image, ImageDraw, ImageFont
+import torch
 
 dic_number_to_letter = {0: "a", 1: "b", 2: "c", 3: "d", 4: "e", 5: "f", 6: "g", 7: "h", 8: "i",
                         9: "j", 10: "k", 11: "l", 12: "m", 13: "n", 14: "o", 15: "p", 16: "q", 17: "r", 18: "s"}
@@ -31,18 +32,24 @@ def sgf_to_y(sgf_path):
             dic_letter_to_number[sgf[k+4]]] = 0.5
     return y.T
 
+def round_y(y):
+    """Takes a (1,361) array and rounds it to be a 0.5/1"""
+    for i in range(361):
+        y[0][i] = round(float(y[0][i]*2))/2
+    return y
 
 def y_to_sgf(y,sgf_path):
-    """ takes a (361,1) array corresponding to the intersection of the go board
+    """ takes a (1,361) array corresponding to the intersection of the go board
     Each intersection is either 0 (no stone) 1 (black stone) 0.5 (white stone) and turns it into a sgf
     which is stored a sgf_final.sgf"""
     sgf = "(;FF[4]CA[UTF-8]GM[1]SZ[19]"
+    y=np.resize(y,(1,361))
     for i in range(361):
-        if y[i][0] == 1:
+        if y[0][i] == 1:
             sgf = sgf + ';B[' + dic_number_to_letter[i//19] + \
                 dic_number_to_letter[i % 19]+']'
 
-        if y[i][0] == 0.5:
+        if y[0][i] == 0.5:
             sgf = sgf + ';W[' + dic_number_to_letter[i//19] + \
                 dic_number_to_letter[i % 19]+']'
     sgf = sgf + ')'
@@ -61,6 +68,7 @@ def vectorisation_img(img_path,heigh,lenght):
     x = np.reshape(img, (1,heigh*lenght*3))
     return x
     
+
 
 
 def vectorisation_sgf(sgf_folder):
@@ -117,6 +125,7 @@ def sgf_to_img(sgf_file):
     white_stone = white_stone.resize((stone_w,stone_h))
     y=sgf_to_y(sgf_file)
     n=0
+    y = np.resize(y,361)
     for k in y:
         if k==0.5:
             img_offset = (int((n//19+0.5)*stone_w),int((n%19+0.5)*stone_h),int((n//19+1.5)*stone_w),int((n%19+1.5)*stone_h))
@@ -127,16 +136,37 @@ def sgf_to_img(sgf_file):
         n+=1
     return background
 
+def generate_random_sgf_and_img(sgf_path,img_path):
+    """Generate a random sgf without captured stones and the corresponding image
+    and store them in the specified paths"""
+    y= torch.rand((1,361))
+    y=round_y(y)
+    y_to_sgf(y,sgf_path)
+    preprocess_sgf(sgf_path)
+    img = sgf_to_img(sgf_path)
+    img.save(img_path)
 
 if __name__ == "__main__":
-    #boucle pour faire sgf_to_img sur tous les sgf non faits
-    k=1
-    for file in os.listdir('sgf_train'):
-        # im = sgf_to_img('sgf_train/'+file)
-        # im.save('img_train/train_img_'+file[9:] +'.png',format='png')
-        os.rename('img_train/train_img_'+file[9:-4],'img_train/train_img_'+file[9:-4]+'.png')
-        k+=1
+
+    for k in range (10000):
         print(k)
+        generate_random_sgf_and_img("sgf_train/random_train_sgf"+str(k)+".sgf","img_train/random_train_img"+str(k)+".png")
+
+
+
+    #boucle pour faire sgf_to_img sur tous les sgf non faits
+    # k=0
+    # for file in os.listdir('sgf_test'):
+    #     # im = sgf_to_img('sgf_train/'+file)
+    #     # im.save('img_train/train_img_'+file[9:] +'.png',format='png')
+    #     # os.rename('img_train/train_img_'+file[9:-4],'img_train/train_img_'+file[9:-4]+'.png')
+    #     k+=1
+    #     print(k)
+    #     img = Image.open('img_test/train_img_'+file[9:-4]+'.png')
+    #     img=np.array(img)
+    #     img = img/255*2-1
+    #     img = Image.fromarray(img)
+    #     img.save('img_test/train_img_'+file[9:-4]+'.png',format='png')
 
 #Pistes d'amélioration:
 #Ajouter du bruit dans la génération d'image
